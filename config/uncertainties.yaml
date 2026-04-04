@@ -1,0 +1,43 @@
+# Monte Carlo uncertainty definitions
+# dist: "normal" → (mean_offset, 1-sigma) | "uniform" → (low, high)
+uncertainties:
+  thrust_fraction:
+    dist: normal
+    mu: 1.0
+    sigma: 0.005                 # ±0.5% 1-sigma thrust variation
+
+  isp_fraction:
+    dist: normal
+    mu: 1.0
+    sigma: 0.003
+
+  propellant_mass_fraction:
+    dist: normal
+    mu: 1.0
+    sigma: 0.002
+
+  drag_coefficient_fraction:
+    dist: normal
+    mu: 1.0
+    sigma: 0.05                  # ±5% Cd uncertainty
+
+  guidance_timing_offset_s:
+    dist: normal
+    mu: 0.0
+    sigma: 0.1                   # ±0.1 s pitch program timing jitter
+
+  separation_impulse_fraction:
+    dist: normal
+    mu: 1.0
+    sigma: 0.03
+
+  tip_off_rate_deg_s:
+    dist: uniform
+    low: 0.0
+    high: 1.0
+
+montecarlo:
+  n_runs: 500
+  seed: 42
+  n_jobs: -1                     # -1 → use all CPU cores (joblib)
+  output_percentiles: [5, 50, 95]

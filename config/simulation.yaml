@@ -1,0 +1,23 @@
+# Simulation and integration settings
+simulation:
+  t_start_s: 0.0
+  t_end_s: 3000.0
+  max_step_s: 0.5
+  integrator: "RK45"            # scipy solve_ivp method
+  rtol: 1.0e-9
+  atol: 1.0e-9
+
+  earth:
+    radius_m: 6_371_000.0
+    mu_m3s2: 3.986004418e14     # standard gravitational parameter
+    j2: 1.08263e-3               # reserved for future J2 perturbation
+    omega_rad_s: 7.2921150e-5   # Earth rotation rate
+
+  atmosphere:
+    model: "us_standard_1976"
+    max_altitude_m: 86_000.0    # above this: vacuum
+
+  constraints:
+    max_q_Pa: 35_000.0          # abort / flag if exceeded
+    fairing_deploy_altitude_m: 120_000.0
+    min_staging_altitude_m: 60_000.0

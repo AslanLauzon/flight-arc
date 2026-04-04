@@ -1,0 +1,20 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+dist/
+build/
+.venv/
+.env
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# outputs (keep structure, ignore generated files)
+outputs/plots/*.png
+outputs/plots/*.pdf
+outputs/tables/*.csv
+outputs/reports/*.txt
+outputs/reports/*.pdf

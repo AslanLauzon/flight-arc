@@ -1,0 +1,147 @@
+"""
+runner.py — Execute N dispersed trajectory simulations.
+
+Each run draws a sample from the uncertainty distributions, builds a dispersed
+copy of the vehicle + guidance, runs the propagator, and returns a result dict.
+Runs are parallelised with joblib (n_jobs=-1 → all CPU cores).
+"""
+
+from __future__ import annotations
+
+import copy
+from typing import Any
+
+import numpy as np
+from joblib import Parallel, delayed
+
+from src.config import MissionToolkitConfig
+from src.events.autosequence import build_autosequence
+from src.guidance.gravity_turn import GravityTurn
+from src.guidance.peg import PEG
+from src.guidance.pitch_program import PitchProgram
+from src.montecarlo.dispersions import draw_dispersions
+from src.orbital.elements import elements_from_state
+from src.orbital.insertion import evaluate_insertion
+from src.propagator.integrator import run
+from src.propagator.state import SimState
+from src.vehicle.vehicle import Vehicle
+
+
+def _apply_dispersions(cfg: MissionToolkitConfig, d: dict[str, float]) -> MissionToolkitConfig:
+    """
+    Return a deep-copied config with dispersions applied.
+    Multipliers (e.g. thrust_fraction=1.02) scale the nominal value.
+    Offsets (e.g. guidance_timing_offset_s) are added.
+    """
+    cfg = copy.deepcopy(cfg)
+
+    tf  = d.get("thrust_fraction", 1.0)
+    isf = d.get("isp_fraction", 1.0)
+    pmf = d.get("propellant_mass_fraction", 1.0)
+    cdf = d.get("drag_coefficient_fraction", 1.0)
+    gto = d.get("guidance_timing_offset_s", 0.0)
+
+    for stage in cfg.vehicle.stages:
+        stage.thrust_vac_N       *= tf
+        stage.isp_vac_s          *= isf
+        stage.isp_sl_s           *= isf
+        stage.propellant_mass_kg *= pmf
+        stage.cd_table = [[m, cd * cdf] for m, cd in stage.cd_table]
+
+    guidance = cfg.mission.guidance
+    if guidance.pitch_program and "points" in guidance.pitch_program:
+        guidance.pitch_program["points"] = [
+            [t + gto, angle] for t, angle in guidance.pitch_program["points"]
+        ]
+
+    return cfg
+
+
+def _run_one(cfg: MissionToolkitConfig, dispersions: dict[str, float]) -> dict[str, Any]:
+    """Run a single dispersed trajectory. Returns a metrics dict."""
+    dcfg    = _apply_dispersions(cfg, dispersions)
+    vehicle = Vehicle(dcfg.vehicle)
+
+    mode = dcfg.mission.guidance.mode
+    if mode == "pitch_program":
+        guidance = PitchProgram(dcfg.mission.guidance.pitch_program["points"])
+    elif mode == "gravity_turn":
+        gt = dcfg.mission.guidance.gravity_turn
+        guidance = GravityTurn(
+            kick_time_s=gt["kick_time_s"],
+            kick_angle_deg=gt["kick_angle_deg"],
+        )
+    elif mode == "peg":
+        gt = dcfg.mission.guidance.gravity_turn
+        guidance = PEG(
+            vehicle=vehicle,
+            target_orbit=dcfg.mission.target_orbit,
+            kick_time_s=gt["kick_time_s"],
+            kick_angle_deg=gt["kick_angle_deg"],
+            update_interval_s=dcfg.mission.guidance.peg.update_interval_s,
+            allow_two_burn=False,
+        )
+    else:
+        raise ValueError(f"Unknown guidance mode: {mode}")
+
+    state  = SimState(t=dcfg.simulation.t_start_s, mass_kg=vehicle.mass)
+    events = build_autosequence(dcfg, vehicle, guidance=guidance)
+
+    final = run(
+        state=state,
+        vehicle=vehicle,
+        guidance=guidance,
+        events=events,
+        t_end_s=dcfg.simulation.t_end_s,
+        dt=dcfg.simulation.max_step_s,
+    )
+
+    # Collect event results
+    fired = {ev.name: ev.result for ev in events if ev.result}
+    seco  = fired.get("seco")
+    max_q = fired.get("max_q")
+
+    # Orbital elements (may fail if suborbital)
+    perigee_km = apogee_km = None
+    insertion_success = False
+    try:
+        elems = elements_from_state(final)
+        perigee_km = elems.perigee_alt_km
+        apogee_km  = elems.apogee_alt_km
+        res = evaluate_insertion(elems, dcfg.mission.target_orbit)
+        insertion_success = res.success
+    except ValueError:
+        pass
+
+    return {
+        "t_seco_s":          seco.t_trigger if seco else None,
+        "alt_seco_km":       final.y / 1e3,
+        "vx_seco_m_s":       final.vx,
+        "vy_seco_m_s":       final.vy,
+        "speed_seco_m_s":    final.speed,
+        "mass_seco_kg":      vehicle.mass,
+        "max_q_Pa":          max_q.state_snapshot["dynamic_pressure_Pa"] if max_q else None,
+        "perigee_km":        perigee_km,
+        "apogee_km":         apogee_km,
+        "insertion_success": insertion_success,
+        "events_fired":      list(fired.keys()),
+        "dispersions":       dispersions,
+    }
+
+
+def run_montecarlo(cfg: MissionToolkitConfig) -> list[dict[str, Any]]:
+    """
+    Run N Monte Carlo trajectories and return all result dicts.
+
+    Uses the seed and n_jobs from cfg.uncertainties.montecarlo.
+    """
+    mc  = cfg.uncertainties.montecarlo
+    rng = np.random.default_rng(mc.seed)
+    all_dispersions = [
+        draw_dispersions(cfg.uncertainties, rng) for _ in range(mc.n_runs)
+    ]
+
+    results: list[dict[str, Any]] = Parallel(n_jobs=mc.n_jobs, backend="loky")(
+        delayed(_run_one)(cfg, d) for d in all_dispersions
+    )
+    return results

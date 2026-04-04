@@ -1,0 +1,29 @@
+# Mission / launch site configuration
+mission:
+  name: "DEMO-1"
+  launch_site:
+    latitude_deg: 28.5           # e.g., Cape Canaveral
+    longitude_deg: -80.6
+    altitude_m: 3.0
+    azimuth_deg: 90.0            # due east → equatorial orbit
+
+  target_orbit:
+    apogee_km: 190.00
+    perigee_km: 160.0
+    inclination_deg: 28.5
+
+  guidance:
+    mode: "peg"                  # "pitch_program" | "gravity_turn" | "peg"
+    pitch_program:               # [time_s, pitch_deg] — 0° = horizontal, 90° = vertical
+      - [0.0,   90.0]
+      - [15.0,  88.0]
+      - [40.0,  77.0]
+      - [70.0,  65.0]
+      - [100.0, 57.0]
+      - [145.0, 42.0]          # stage 1 burnout — pitched well over for horizontal velocity
+    gravity_turn:
+      kick_time_s: 15.0
+      kick_angle_deg: 4.0        # initial pitch-kick to start the turn
+    peg:
+      open_loop_until_s: 30.0    # open-loop gravity turn until atmosphere thins
+      update_interval_s: 2.0     # guidance cycle rate

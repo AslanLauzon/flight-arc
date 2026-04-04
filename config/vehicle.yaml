@@ -1,0 +1,42 @@
+# Vehicle configuration — two-stage rocket
+vehicle:
+  name: "ExampleLV-1"
+  reference_area_m2: 0.785       # pi * (0.5m radius)^2
+
+  stages:
+    - id: 1
+      name: "First Stage"
+      propellant_mass_kg: 18000.0
+      dry_mass_kg: 2000.0
+      thrust_vac_N: 500000.0
+      isp_vac_s: 290.0
+      isp_sl_s: 255.0
+      burn_time_s: 145.0
+      cd_table:                  # [mach, Cd] pairs — interpolated at runtime
+        - [0.0, 0.30]
+        - [0.8, 0.38]
+        - [1.0, 0.48]
+        - [1.2, 0.44]
+        - [2.0, 0.32]
+        - [5.0, 0.25]
+
+    - id: 2
+      name: "Second Stage"
+      propellant_mass_kg: 7500.0
+      dry_mass_kg: 600.0
+      thrust_vac_N: 65000.0
+      isp_vac_s: 340.0
+      isp_sl_s: 340.0            # vacuum-only engine
+      burn_time_s: 390.0
+      cd_table:
+        - [0.0, 0.28]
+        - [2.0, 0.28]
+        - [10.0, 0.28]
+
+  payload:
+    mass_kg: 300.0
+    fairing_mass_kg: 120.0       # jettisoned at fairing_deploy event
+
+  separation:
+    spring_impulse_Ns: 500.0     # total ejection impulse
+    tip_off_rate_deg_s: 0.5      # worst-case tip-off angular rate
