@@ -14,6 +14,7 @@ from src.api.models import (
     MissionTargetModel,
     MonteCarloMetricModel,
     MonteCarloPayload,
+    MonteCarloRunResultModel,
     NominalRunPayload,
     PlotAnnotationModel,
     PlotModel,
@@ -332,6 +333,7 @@ def build_montecarlo_payload(
 
     stats = compute_statistics(results, cfg.uncertainties.montecarlo.output_percentiles)
     metrics = _serialize_mc_metrics(stats)
+    run_results = [MonteCarloRunResultModel(**result) for result in results]
 
     success_rate_plot = PlotModel(
         id="insertion_success",
@@ -361,7 +363,9 @@ def build_montecarlo_payload(
             "n_runs": stats.n_runs,
             "n_success": stats.n_success,
             "success_rate_pct": stats.success_rate_pct,
+            "insertion_tolerance_km": 5.0,
         },
         metrics=metrics,
+        runs=run_results,
         plots=[success_rate_plot],
     )

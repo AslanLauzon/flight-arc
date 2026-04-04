@@ -16,9 +16,7 @@ from joblib import Parallel, delayed
 
 from src.config import MissionToolkitConfig
 from src.events.autosequence import build_autosequence
-from src.guidance.gravity_turn import GravityTurn
-from src.guidance.peg import PEG
-from src.guidance.pitch_program import PitchProgram
+from src.mission_runner import build_guidance
 from src.montecarlo.dispersions import draw_dispersions
 from src.orbital.elements import elements_from_state
 from src.orbital.insertion import evaluate_insertion
@@ -61,28 +59,7 @@ def _run_one(cfg: MissionToolkitConfig, dispersions: dict[str, float]) -> dict[s
     """Run a single dispersed trajectory. Returns a metrics dict."""
     dcfg    = _apply_dispersions(cfg, dispersions)
     vehicle = Vehicle(dcfg.vehicle)
-
-    mode = dcfg.mission.guidance.mode
-    if mode == "pitch_program":
-        guidance = PitchProgram(dcfg.mission.guidance.pitch_program["points"])
-    elif mode == "gravity_turn":
-        gt = dcfg.mission.guidance.gravity_turn
-        guidance = GravityTurn(
-            kick_time_s=gt["kick_time_s"],
-            kick_angle_deg=gt["kick_angle_deg"],
-        )
-    elif mode == "peg":
-        gt = dcfg.mission.guidance.gravity_turn
-        guidance = PEG(
-            vehicle=vehicle,
-            target_orbit=dcfg.mission.target_orbit,
-            kick_time_s=gt["kick_time_s"],
-            kick_angle_deg=gt["kick_angle_deg"],
-            update_interval_s=dcfg.mission.guidance.peg.update_interval_s,
-            allow_two_burn=False,
-        )
-    else:
-        raise ValueError(f"Unknown guidance mode: {mode}")
+    guidance = build_guidance(dcfg, vehicle)
 
     state  = SimState(t=dcfg.simulation.t_start_s, mass_kg=vehicle.mass)
     events = build_autosequence(dcfg, vehicle, guidance=guidance)
@@ -103,12 +80,15 @@ def _run_one(cfg: MissionToolkitConfig, dispersions: dict[str, float]) -> dict[s
 
     # Orbital elements (may fail if suborbital)
     perigee_km = apogee_km = None
+    delta_perigee_km = delta_apogee_km = None
     insertion_success = False
     try:
         elems = elements_from_state(final)
         perigee_km = elems.perigee_alt_km
         apogee_km  = elems.apogee_alt_km
         res = evaluate_insertion(elems, dcfg.mission.target_orbit)
+        delta_perigee_km = res.delta_perigee_km
+        delta_apogee_km = res.delta_apogee_km
         insertion_success = res.success
     except ValueError:
         pass
@@ -123,6 +103,8 @@ def _run_one(cfg: MissionToolkitConfig, dispersions: dict[str, float]) -> dict[s
         "max_q_Pa":          max_q.state_snapshot["dynamic_pressure_Pa"] if max_q else None,
         "perigee_km":        perigee_km,
         "apogee_km":         apogee_km,
+        "delta_perigee_km":  delta_perigee_km,
+        "delta_apogee_km":   delta_apogee_km,
         "insertion_success": insertion_success,
         "events_fired":      list(fired.keys()),
         "dispersions":       dispersions,

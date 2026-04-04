@@ -119,6 +119,23 @@ class MonteCarloMetricModel(BaseModel):
     percentiles: dict[str, float]
 
 
+class MonteCarloRunResultModel(BaseModel):
+    perigee_km: float | None = None
+    apogee_km: float | None = None
+    delta_perigee_km: float | None = None
+    delta_apogee_km: float | None = None
+    insertion_success: bool
+    t_seco_s: float | None = None
+    alt_seco_km: float | None = None
+    vx_seco_m_s: float | None = None
+    vy_seco_m_s: float | None = None
+    speed_seco_m_s: float | None = None
+    mass_seco_kg: float | None = None
+    max_q_Pa: float | None = None
+    events_fired: list[str] = Field(default_factory=list)
+    dispersions: dict[str, float] = Field(default_factory=dict)
+
+
 class MonteCarloPayload(BaseModel):
     schema_version: str = "1.0"
     request_id: str
@@ -129,6 +146,7 @@ class MonteCarloPayload(BaseModel):
     status: StatusModel
     summary: dict[str, Any]
     metrics: dict[str, MonteCarloMetricModel]
+    runs: list[MonteCarloRunResultModel]
     plots: list[PlotModel]
 
 
