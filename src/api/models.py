@@ -92,8 +92,16 @@ class MonteCarloRunRequest(BaseModel):
     uncertainties: dict[str, Any] | None = None
 
 
+class RunAcceptedPayload(BaseModel):
+    request_id: str
+    status: str
+    run_type: str
+    poll_path: str
+
+
 class NominalRunPayload(BaseModel):
     schema_version: str = "1.0"
+    request_id: str
     run_id: str
     run_type: str
     mission: MissionMetadataModel
@@ -113,6 +121,7 @@ class MonteCarloMetricModel(BaseModel):
 
 class MonteCarloPayload(BaseModel):
     schema_version: str = "1.0"
+    request_id: str
     run_id: str
     run_type: str
     mission: MissionMetadataModel
@@ -121,3 +130,11 @@ class MonteCarloPayload(BaseModel):
     summary: dict[str, Any]
     metrics: dict[str, MonteCarloMetricModel]
     plots: list[PlotModel]
+
+
+class RunJobPayload(BaseModel):
+    request_id: str
+    run_type: str
+    status: str
+    result: dict[str, Any] | None = None
+    error: str | None = None

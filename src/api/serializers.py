@@ -242,6 +242,7 @@ def _nominal_status(
 
 def build_nominal_payload(
     result: NominalRunResult,
+    request_id: str,
     run_id: str | None = None,
 ) -> NominalRunPayload:
     if run_id is None:
@@ -281,6 +282,7 @@ def build_nominal_payload(
         }
 
     return NominalRunPayload(
+        request_id=request_id,
         run_id=run_id,
         run_type="nominal",
         mission=serialize_mission(result.cfg),
@@ -322,6 +324,7 @@ def _serialize_mc_metrics(stats: MonteCarloStats) -> dict[str, MonteCarloMetricM
 def build_montecarlo_payload(
     cfg: MissionToolkitConfig,
     results: list[dict[str, Any]],
+    request_id: str,
     run_id: str | None = None,
 ) -> MonteCarloPayload:
     if run_id is None:
@@ -348,6 +351,7 @@ def build_montecarlo_payload(
     )
 
     return MonteCarloPayload(
+        request_id=request_id,
         run_id=run_id,
         run_type="montecarlo",
         mission=serialize_mission(cfg),

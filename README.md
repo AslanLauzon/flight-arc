@@ -46,8 +46,9 @@ Available endpoints:
 - `GET /config`
 - `POST /runs/nominal`
 - `POST /runs/montecarlo`
+- `GET /runs/{request_id}`
 
-The API returns simulation results as structured JSON with event data, orbit results, and plot series for frontend rendering.
+The run endpoints now return `202 Accepted` with a `request_id`. The frontend should poll `GET /runs/{request_id}` until the job status becomes `completed` or `failed`.
 
 Both run endpoints can accept config overrides in the request body. The backend starts from the default YAML config, then merges any provided `mission`, `vehicle`, `simulation`, or `uncertainties` fields before validating and running the sim.
 

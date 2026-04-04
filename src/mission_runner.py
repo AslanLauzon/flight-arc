@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import logging
 
 from src.config import MissionToolkitConfig, load_config
 from src.events.autosequence import build_autosequence
@@ -14,6 +15,8 @@ from src.orbital.insertion import InsertionResult, evaluate_insertion
 from src.propagator.integrator import run
 from src.propagator.state import SimState
 from src.vehicle.vehicle import Vehicle
+
+logger = logging.getLogger("flight_arc.mission")
 
 
 @dataclass
@@ -48,11 +51,11 @@ def build_guidance(cfg: MissionToolkitConfig, vehicle: Vehicle) -> GuidanceBase:
             initial_kick_angle_deg=gt["kick_angle_deg"],
             update_interval_s=cfg.mission.guidance.peg.update_interval_s,
         )
-        print(
-            "[PEG] kick optimiser: "
-            f"kick_time={solution.kick_time_s:.2f}s  "
-            f"kick_angle={solution.kick_angle_deg:.2f}deg  "
-            f"objective={solution.objective:.2f}"
+        logger.info(
+            "peg_kick_optimiser kick_time_s=%.2f kick_angle_deg=%.2f objective=%.2f",
+            solution.kick_time_s,
+            solution.kick_angle_deg,
+            solution.objective,
         )
         return PEG(
             vehicle=vehicle,
