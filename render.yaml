@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: flight-arc-api
+    runtime: python
+    plan: starter
+    buildCommand: pip install ".[api]"
+    startCommand: uvicorn src.api.app:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: FLIGHT_ARC_CORS_ORIGINS
+        value: "*"

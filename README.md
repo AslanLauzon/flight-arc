@@ -30,6 +30,84 @@ uv run python -m scripts.run_nominal
 uv run python -m scripts.run_montecarlo
 ```
 
+## API
+
+Run the backend locally with:
+
+```bash
+uv sync --extra api
+uv run uvicorn src.api.app:app --reload
+```
+
+Available endpoints:
+
+- `GET /`
+- `GET /health`
+- `GET /config`
+- `POST /runs/nominal`
+- `POST /runs/montecarlo`
+
+The API returns simulation results as structured JSON with event data, orbit results, and plot series for frontend rendering.
+
+Both run endpoints can accept config overrides in the request body. The backend starts from the default YAML config, then merges any provided `mission`, `vehicle`, `simulation`, or `uncertainties` fields before validating and running the sim.
+
+Example nominal request:
+
+```json
+{
+  "mission": {
+    "name": "DEMO-1",
+    "launch_site": {
+      "latitude_deg": 28.5,
+      "longitude_deg": -80.6,
+      "altitude_m": 3.0,
+      "azimuth_deg": 90.0
+    },
+    "target_orbit": {
+      "apogee_km": 190.0,
+      "perigee_km": 160.0,
+      "inclination_deg": 28.5
+    }
+  },
+  "vehicle": {
+    "stages": [
+      {
+        "id": 1,
+        "name": "First Stage",
+        "propellant_mass_kg": 18000.0,
+        "dry_mass_kg": 2000.0,
+        "thrust_vac_N": 500000.0,
+        "isp_vac_s": 290.0,
+        "isp_sl_s": 255.0,
+        "burn_time_s": 145.0
+      }
+    ],
+    "payload": {
+      "mass_kg": 300.0,
+      "fairing_mass_kg": 120.0,
+      "fairing_jettisoned": true
+    },
+    "separation": {
+      "spring_impulse_Ns": 500.0,
+      "tip_off_rate_deg_s": 0.5
+    }
+  }
+}
+```
+
+Stage overrides are merged by `id`, so you can update stage 1 without resending every stage field from the default config.
+If a vehicle deploys the fairing but keeps that mass attached, set `"fairing_jettisoned": false`.
+
+## Deploying To Render
+
+This repo includes [render.yaml](/C:/Code/flight-arc/flight-arc/render.yaml) for a Render web service. The service installs the API dependencies and starts:
+
+```bash
+uvicorn src.api.app:app --host 0.0.0.0 --port $PORT
+```
+
+Set `FLIGHT_ARC_CORS_ORIGINS` in Render if your frontend is hosted on a different origin.
+
 ## Outputs
 
 A nominal run produces:

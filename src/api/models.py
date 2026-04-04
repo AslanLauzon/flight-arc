@@ -37,13 +37,6 @@ class PlotModel(BaseModel):
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
-class ArtifactImageModel(BaseModel):
-    id: str
-    mime_type: str
-    encoding: str
-    data: str
-
-
 class EventModel(BaseModel):
     name: str
     time_s: float
@@ -85,6 +78,20 @@ class StatusModel(BaseModel):
     message: str
 
 
+class NominalRunRequest(BaseModel):
+    mission: dict[str, Any] | None = None
+    vehicle: dict[str, Any] | None = None
+    simulation: dict[str, Any] | None = None
+    uncertainties: dict[str, Any] | None = None
+
+
+class MonteCarloRunRequest(BaseModel):
+    mission: dict[str, Any] | None = None
+    vehicle: dict[str, Any] | None = None
+    simulation: dict[str, Any] | None = None
+    uncertainties: dict[str, Any] | None = None
+
+
 class NominalRunPayload(BaseModel):
     schema_version: str = "1.0"
     run_id: str
@@ -96,7 +103,6 @@ class NominalRunPayload(BaseModel):
     events: list[EventModel]
     outcomes: dict[str, Any]
     plots: list[PlotModel]
-    artifacts: dict[str, list[ArtifactImageModel]]
 
 
 class MonteCarloMetricModel(BaseModel):
@@ -115,4 +121,3 @@ class MonteCarloPayload(BaseModel):
     summary: dict[str, Any]
     metrics: dict[str, MonteCarloMetricModel]
     plots: list[PlotModel]
-    artifacts: dict[str, list[ArtifactImageModel]]

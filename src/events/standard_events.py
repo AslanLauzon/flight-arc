@@ -173,11 +173,13 @@ class FairingDeployEvent(Event):
 
     def _action(self, state: SimState) -> EventResult:
         self.vehicle.mass_model.jettison("fairing")
+        retained = self.vehicle.mass_model.fairing_attached
+        action = "deployed, mass retained" if retained else "jettisoned"
         return EventResult(
             name=self.name,
             t_trigger=state.t,
             state_snapshot=state.snapshot(),
-            message=f"Fairing jettisoned at {state.y/1e3:.1f} km",
+            message=f"Fairing {action} at {state.y/1e3:.1f} km",
         )
 
 

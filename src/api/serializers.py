@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import base64
 import json
 from datetime import UTC, datetime
 from pathlib import Path
@@ -9,7 +8,6 @@ from typing import Any
 import numpy as np
 
 from src.api.models import (
-    ArtifactImageModel,
     AxisModel,
     EventModel,
     MissionMetadataModel,
@@ -31,7 +29,6 @@ from src.montecarlo.analysis import MonteCarloStats, compute_statistics
 from src.orbital.elements import OrbitalElements
 from src.orbital.insertion import InsertionResult
 from src.propagator.state import SimState
-from src.report.plots import render_trajectory_plot_png
 
 OUTPUT_DIR = Path(__file__).resolve().parents[2] / "outputs"
 
@@ -246,23 +243,11 @@ def _nominal_status(
 def build_nominal_payload(
     result: NominalRunResult,
     run_id: str | None = None,
-    include_plot_image: bool = True,
 ) -> NominalRunPayload:
     if run_id is None:
         run_id = create_run_id("nominal")
 
     max_q_event = next((event for event in result.events if event.name == "max_q" and event.result), None)
-    artifacts: dict[str, list[ArtifactImageModel]] = {"images": []}
-    if include_plot_image:
-        plot_bytes = render_trajectory_plot_png(result.final_state, result.events, result.elements)
-        artifacts["images"].append(
-            ArtifactImageModel(
-                id="trajectory_summary_png",
-                mime_type="image/png",
-                encoding="base64",
-                data=base64.b64encode(plot_bytes).decode("ascii"),
-            )
-        )
 
     outcomes: dict[str, Any] = {}
     if result.elements is not None:
@@ -314,7 +299,6 @@ def build_nominal_payload(
         events=_serialize_events(result.events),
         outcomes=outcomes,
         plots=_trajectory_plots(result.final_state, result.events, result.elements),
-        artifacts=artifacts,
     )
 
 
@@ -376,5 +360,4 @@ def build_montecarlo_payload(
         },
         metrics=metrics,
         plots=[success_rate_plot],
-        artifacts={"images": []},
     )

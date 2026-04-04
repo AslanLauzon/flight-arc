@@ -45,6 +45,7 @@ class StageConfig(BaseModel):
 class PayloadConfig(BaseModel):
     mass_kg: float
     fairing_mass_kg: float
+    fairing_jettisoned: bool = True
 
 
 class SeparationConfig(BaseModel):
