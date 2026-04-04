@@ -145,10 +145,10 @@ def create_app() -> FastAPI:
     @app.post("/runs/nominal", response_model=RunAcceptedPayload, status_code=status.HTTP_202_ACCEPTED)
     def create_nominal_run(
         background_tasks: BackgroundTasks,
+        http_request: Request,
         request: NominalRunRequest | None = None,
-        http_request: Request | None = None,
     ) -> RunAcceptedPayload:
-        request_id = getattr(http_request.state, "request_id", str(uuid.uuid4())[:8]) if http_request else str(uuid.uuid4())[:8]
+        request_id = getattr(http_request.state, "request_id", str(uuid.uuid4())[:8])
         cfg = config_from_request(request)
         job_store.create(request_id, "nominal")
         logger.info("request_accepted request_id=%s run_type=nominal", request_id)
@@ -163,10 +163,10 @@ def create_app() -> FastAPI:
     @app.post("/runs/montecarlo", response_model=RunAcceptedPayload, status_code=status.HTTP_202_ACCEPTED)
     def create_montecarlo_run(
         background_tasks: BackgroundTasks,
+        http_request: Request,
         request: MonteCarloRunRequest | None = None,
-        http_request: Request | None = None,
     ) -> RunAcceptedPayload:
-        request_id = getattr(http_request.state, "request_id", str(uuid.uuid4())[:8]) if http_request else str(uuid.uuid4())[:8]
+        request_id = getattr(http_request.state, "request_id", str(uuid.uuid4())[:8])
         cfg = config_from_request(request)
         job_store.create(request_id, "montecarlo")
         logger.info("request_accepted request_id=%s run_type=montecarlo", request_id)
