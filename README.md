@@ -99,16 +99,6 @@ Example nominal request:
 Stage overrides are merged by `id`, so you can update stage 1 without resending every stage field from the default config.
 If a vehicle deploys the fairing but keeps that mass attached, set `"fairing_jettisoned": false`.
 
-## Deploying To Render
-
-This repo includes [render.yaml](/C:/Code/flight-arc/flight-arc/render.yaml) for a Render web service. The service installs the API dependencies and starts:
-
-```bash
-uvicorn src.api.app:app --host 0.0.0.0 --port $PORT
-```
-
-Set `FLIGHT_ARC_CORS_ORIGINS` in Render if your frontend is hosted on a different origin.
-
 ## Outputs
 
 A nominal run produces:
