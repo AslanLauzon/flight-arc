@@ -16,6 +16,7 @@ from joblib import Parallel, delayed
 
 from src.config import MissionToolkitConfig
 from src.events.autosequence import build_autosequence
+from src.guidance.kick_optimizer import KickSolution
 from src.mission_runner import build_guidance
 from src.montecarlo.dispersions import draw_dispersions
 from src.orbital.elements import elements_from_state
@@ -55,11 +56,27 @@ def _apply_dispersions(cfg: MissionToolkitConfig, d: dict[str, float]) -> Missio
     return cfg
 
 
-def _run_one(cfg: MissionToolkitConfig, dispersions: dict[str, float]) -> dict[str, Any]:
+def _run_one(
+    cfg: MissionToolkitConfig,
+    dispersions: dict[str, float],
+    nominal_kick: KickSolution | None = None,
+) -> dict[str, Any]:
     """Run a single dispersed trajectory. Returns a metrics dict."""
     dcfg    = _apply_dispersions(cfg, dispersions)
     vehicle = Vehicle(dcfg.vehicle)
-    guidance = build_guidance(dcfg, vehicle)
+
+    if nominal_kick is not None and dcfg.mission.guidance.mode == "peg":
+        from src.guidance.peg import PEG
+        guidance = PEG(
+            vehicle=vehicle,
+            target_orbit=dcfg.mission.target_orbit,
+            kick_time_s=nominal_kick.kick_time_s,
+            kick_angle_deg=nominal_kick.kick_angle_deg,
+            update_interval_s=dcfg.mission.guidance.peg.update_interval_s,
+            allow_two_burn=False,
+        )
+    else:
+        guidance = build_guidance(dcfg, vehicle)
 
     state  = SimState(t=dcfg.simulation.t_start_s, mass_kg=vehicle.mass)
     events = build_autosequence(dcfg, vehicle, guidance=guidance)
@@ -71,6 +88,7 @@ def _run_one(cfg: MissionToolkitConfig, dispersions: dict[str, float]) -> dict[s
         events=events,
         t_end_s=dcfg.simulation.t_end_s,
         dt=dcfg.simulation.max_step_s,
+        record_history=False,
     )
 
     # Collect event results
@@ -116,6 +134,9 @@ def run_montecarlo(cfg: MissionToolkitConfig) -> list[dict[str, Any]]:
     Run N Monte Carlo trajectories and return all result dicts.
 
     Uses the seed and n_jobs from cfg.uncertainties.montecarlo.
+    For PEG guidance, the kick solution is optimized once on the nominal config
+    and reused across all runs — PEG corrects in-flight so the kick only needs
+    to be "good enough" to start the gravity turn.
     """
     mc  = cfg.uncertainties.montecarlo
     rng = np.random.default_rng(mc.seed)
@@ -123,7 +144,20 @@ def run_montecarlo(cfg: MissionToolkitConfig) -> list[dict[str, Any]]:
         draw_dispersions(cfg.uncertainties, rng) for _ in range(mc.n_runs)
     ]
 
+    # Pre-compute kick solution once from nominal config (avoids re-running the
+    # optimizer ~125 times — one per MC run — which dominates wall-clock time).
+    nominal_kick: KickSolution | None = None
+    if cfg.mission.guidance.mode == "peg":
+        from src.guidance.kick_optimizer import optimize_kick
+        gt = cfg.mission.guidance.gravity_turn
+        nominal_kick = optimize_kick(
+            cfg=cfg,
+            initial_kick_time_s=gt["kick_time_s"],
+            initial_kick_angle_deg=gt["kick_angle_deg"],
+            update_interval_s=cfg.mission.guidance.peg.update_interval_s,
+        )
+
     results: list[dict[str, Any]] = Parallel(n_jobs=mc.n_jobs, backend="loky")(
-        delayed(_run_one)(cfg, d) for d in all_dispersions
+        delayed(_run_one)(cfg, d, nominal_kick) for d in all_dispersions
     )
     return results

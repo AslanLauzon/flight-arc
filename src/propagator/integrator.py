@@ -1,6 +1,6 @@
 import math
 
-from src.atmosphere.us_standard_1976 import dynamic_pressure, speed_of_sound
+from src.atmosphere.us_standard_1976 import density_and_mach
 from src.events.event import Event
 from src.guidance.base import GuidanceBase
 from src.propagator.equations_of_motion import compute_accelerations
@@ -10,8 +10,9 @@ from src.vehicle.vehicle import Vehicle
 
 def _update_derived(state: SimState) -> None:
     speed = state.speed
-    state.dynamic_pressure_Pa = dynamic_pressure(state.y, speed)
-    state.mach = speed / speed_of_sound(state.y) if speed_of_sound(state.y) > 0 else 0.0
+    rho, mach = density_and_mach(state.y, speed)
+    state.dynamic_pressure_Pa = 0.5 * rho * speed * speed
+    state.mach = mach
     if speed > 1e-6:
         state.flight_path_angle_deg = math.degrees(math.atan2(state.vy, state.vx))
 
@@ -61,6 +62,7 @@ def run(
     events: list[Event],
     t_end_s: float,
     dt: float,
+    record_history: bool = True,
 ) -> SimState:
     from src.atmosphere.us_standard_1976 import pressure
 
@@ -84,6 +86,7 @@ def run(
             state.y = 0.0
             return state
 
-        state.record()
+        if record_history:
+            state.record()
 
     return state

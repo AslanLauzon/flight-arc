@@ -1,4 +1,4 @@
-from src.atmosphere.us_standard_1976 import density, pressure, speed_of_sound
+from src.atmosphere.us_standard_1976 import density, density_and_mach, pressure, speed_of_sound
 from src.config import VehicleConfig
 from src.vehicle.mass_model import MassModel
 from src.vehicle.stage import Stage
@@ -30,8 +30,9 @@ class Vehicle:
         if speed < 1e-6:
             return 0.0, 0.0
 
-        rho = density(altitude_m)
-        mach = speed / speed_of_sound(altitude_m)
+        rho, mach = density_and_mach(altitude_m, speed)
+        if rho == 0.0:
+            return 0.0, 0.0
         cd = self.mass_model.current_stage.drag_coefficient(mach)
         drag_total = 0.5 * rho * speed**2 * cd * self.reference_area_m2
         return -drag_total * (vx / speed), -drag_total * (vy / speed)

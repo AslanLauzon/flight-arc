@@ -24,9 +24,9 @@ class InsertionResult:
         return (
             f"Insertion [{status}]\n"
             f"  Perigee: {self.achieved.perigee_alt_km:.1f} km "
-            f"(target {self.target_perigee_km:.1f}, Δ{self.delta_perigee_km:+.1f} km)\n"
+            f"(target {self.target_perigee_km:.1f}, d{self.delta_perigee_km:+.1f} km)\n"
             f"  Apogee:  {self.achieved.apogee_alt_km:.1f} km "
-            f"(target {self.target_apogee_km:.1f}, Δ{self.delta_apogee_km:+.1f} km)"
+            f"(target {self.target_apogee_km:.1f}, d{self.delta_apogee_km:+.1f} km)"
         )
 
 

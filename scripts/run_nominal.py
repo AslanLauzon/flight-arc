@@ -71,7 +71,7 @@ def main() -> None:
     _print_orbit_summary(result)
     _print_final_state(result)
 
-    payload = build_nominal_payload(result)
+    payload = build_nominal_payload(result, request_id="cli")
     json_path = write_payload_json(
         payload.model_dump(mode="json"),
         Path(OUTPUT_DIR) / "nominal_latest.json",
