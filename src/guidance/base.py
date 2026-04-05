@@ -15,7 +15,13 @@ class GuidanceBase(ABC):
     @abstractmethod
     def pitch_angle_deg(self, state: SimState) -> float:
         """
-        Return pitch angle [deg] at current state.
-        0° = horizontal, 90° = vertical.
+        Return commanded pitch angle [deg] at current state.
+
+        Pitch convention (unchanged from 3DOF):
+            0°  = horizontal (prograde)
+            90° = vertical   (radial up)
+
+        The 6DOF EOM converts this to a 3D ECI thrust direction using the
+        current position and velocity vectors to define the orbital plane.
         """
         ...

@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 import logging
 
+from src.attitude.initial_conditions import launch_attitude, launch_site_eci
 from src.config import MissionToolkitConfig, load_config
 from src.events.autosequence import build_autosequence
 from src.events.event import Event
@@ -75,7 +76,25 @@ def run_nominal_mission(cfg: MissionToolkitConfig | None = None) -> NominalRunRe
 
     vehicle = Vehicle(cfg.vehicle)
     guidance = build_guidance(cfg, vehicle)
-    state = SimState(t=cfg.simulation.t_start_s, mass_kg=vehicle.mass)
+
+    # Build 6DOF initial conditions from launch site
+    ls = cfg.mission.launch_site
+    (rx0, ry0, rz0), (vx0, vy0, vz0) = launch_site_eci(
+        ls.latitude_deg, ls.longitude_deg, ls.altitude_m
+    )
+    qw0, qx0, qy0, qz0 = launch_attitude(
+        rx0, ry0, rz0,
+        ls.latitude_deg, ls.longitude_deg, ls.azimuth_deg,
+    )
+
+    state = SimState(
+        t=cfg.simulation.t_start_s,
+        rx=rx0, ry=ry0, rz=rz0,
+        vx_eci=vx0, vy_eci=vy0, vz_eci=vz0,
+        qw=qw0, qx=qx0, qy=qy0, qz=qz0,
+        mass_kg=vehicle.mass,
+        propellant_remaining_kg=vehicle.mass_model.propellant_remaining_kg,
+    )
     events = build_autosequence(cfg, vehicle, guidance=guidance)
 
     final_state = run(

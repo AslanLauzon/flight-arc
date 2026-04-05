@@ -29,6 +29,31 @@ class CdPoint(BaseModel):
     cd: float
 
 
+class InertiaConfig(BaseModel):
+    """Diagonal inertia tensor at full propellant load and at dry (zero propellant)."""
+    ixx_wet_kg_m2: float       # roll axis (longitudinal) — full propellant
+    iyy_wet_kg_m2: float       # pitch axis — full propellant
+    izz_wet_kg_m2: float       # yaw axis — full propellant
+    ixx_dry_kg_m2: float       # roll axis — dry (no propellant)
+    iyy_dry_kg_m2: float       # pitch axis — dry
+    izz_dry_kg_m2: float       # yaw axis — dry
+
+
+class GimbalConfig(BaseModel):
+    max_deflection_deg: float = 5.0
+    moment_arm_m: float = 2.0   # distance from CoG to gimbal pivot
+
+
+class AeroMomentsConfig(BaseModel):
+    reference_length_m: float = 10.0    # body reference length for Cm
+    cm_alpha_per_rad: float = -0.5      # pitch moment coefficient slope [1/rad]
+
+
+class AttitudeControllerConfig(BaseModel):
+    kp: float = 2.0    # proportional gain [rad/rad]
+    kd: float = 0.8    # derivative gain   [rad/(rad/s)]
+
+
 class StageConfig(BaseModel):
     id: int
     name: str
@@ -39,6 +64,10 @@ class StageConfig(BaseModel):
     isp_sl_s: float
     burn_time_s: float
     cd_table: list[list[float]]   # raw [[mach, cd], ...] from YAML
+    inertia: InertiaConfig | None = None
+    gimbal: GimbalConfig = GimbalConfig()
+    aero_moments: AeroMomentsConfig = AeroMomentsConfig()
+    attitude_controller: AttitudeControllerConfig = AttitudeControllerConfig()
 
 
 
