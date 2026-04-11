@@ -36,7 +36,3 @@ vehicle:
   payload:
     mass_kg: 300.0
     fairing_mass_kg: 120.0       # jettisoned at fairing_deploy event
-
-  separation:
-    spring_impulse_Ns: 500.0     # total ejection impulse
-    tip_off_rate_deg_s: 0.5      # worst-case tip-off angular rate

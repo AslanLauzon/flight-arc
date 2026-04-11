@@ -28,11 +28,6 @@ class SimState:
     # ── Engine control ──────────────────────────────────────────────────────
     engine_on: bool = True        # False during coast between burns
 
-    # ── Vehicle bookkeeping ──────────────────────────────────────────────────
-    mass_kg:        float = 0.0   # current total wet mass [kg]
-    stage_index:    int   = 0     # which stage is currently burning (0-based)
-    propellant_remaining_kg: float = 0.0
-
     # ── Derived / cached quantities (updated each step) ──────────────────────
     dynamic_pressure_Pa: float = 0.0
     mach:                float = 0.0
@@ -52,9 +47,6 @@ class SimState:
             "y":    self.y,
             "vx":   self.vx,
             "vy":   self.vy,
-            "mass_kg":             self.mass_kg,
-            "stage_index":         self.stage_index,
-            "propellant_remaining_kg": self.propellant_remaining_kg,
             "dynamic_pressure_Pa": self.dynamic_pressure_Pa,
             "mach":                self.mach,
             "flight_path_angle_deg": self.flight_path_angle_deg,

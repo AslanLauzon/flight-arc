@@ -32,6 +32,8 @@ def _apply_dispersions(cfg: MissionToolkitConfig, d: dict[str, float]) -> Missio
     Multipliers (e.g. thrust_fraction=1.02) scale the nominal value.
     Offsets (e.g. guidance_timing_offset_s) are added.
     """
+    # Deep copy so that multipliers applied below don't mutate the shared
+    # nominal config — each MC run must start from the original values.
     cfg = copy.deepcopy(cfg)
 
     tf  = d.get("thrust_fraction", 1.0)
@@ -78,7 +80,7 @@ def _run_one(
     else:
         guidance = build_guidance(dcfg, vehicle)
 
-    state  = SimState(t=dcfg.simulation.t_start_s, mass_kg=vehicle.mass)
+    state  = SimState(t=dcfg.simulation.t_start_s)
     events = build_autosequence(dcfg, vehicle, guidance=guidance)
 
     final = run(
@@ -88,7 +90,7 @@ def _run_one(
         events=events,
         t_end_s=dcfg.simulation.t_end_s,
         dt=dcfg.simulation.max_step_s,
-        record_history=False,
+        record_history=False,  # MC runs only need the terminal state, not the full trajectory
     )
 
     # Collect event results

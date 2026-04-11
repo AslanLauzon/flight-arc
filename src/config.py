@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Literal
 
 import yaml
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field
 
 # ---------------------------------------------------------------------------
 # Paths
@@ -24,11 +24,6 @@ CONFIG_DIR = Path(__file__).parent.parent / "config"
 # ---------------------------------------------------------------------------
 # Vehicle models
 # ---------------------------------------------------------------------------
-class CdPoint(BaseModel):
-    mach: float
-    cd: float
-
-
 class StageConfig(BaseModel):
     id: int
     name: str
@@ -37,9 +32,8 @@ class StageConfig(BaseModel):
     thrust_vac_N: float
     isp_vac_s: float
     isp_sl_s: float
-    burn_time_s: float
-    cd_table: list[list[float]]   # raw [[mach, cd], ...] from YAML
-
+    burn_time_s: float           # informational only — not enforced by the integrator
+    cd_table: list[list[float]]  # raw [[mach, cd], ...] from YAML
 
 
 class PayloadConfig(BaseModel):
@@ -48,17 +42,11 @@ class PayloadConfig(BaseModel):
     fairing_jettisoned: bool = True
 
 
-class SeparationConfig(BaseModel):
-    spring_impulse_Ns: float
-    tip_off_rate_deg_s: float
-
-
 class VehicleConfig(BaseModel):
     name: str
     reference_area_m2: float
     stages: list[StageConfig]
     payload: PayloadConfig
-    separation: SeparationConfig
 
 
 # ---------------------------------------------------------------------------
@@ -77,18 +65,7 @@ class TargetOrbitConfig(BaseModel):
     inclination_deg: float
 
 
-class PitchProgramConfig(BaseModel):
-    # List of [time_s, pitch_deg] pairs
-    points: list[list[float]] = Field(default_factory=list)
-
-
-class GravityTurnConfig(BaseModel):
-    kick_time_s: float
-    kick_angle_deg: float
-
-
 class PEGConfig(BaseModel):
-    open_loop_until_s: float = 30.0
     update_interval_s: float = 2.0
 
 
@@ -109,18 +86,6 @@ class MissionConfig(BaseModel):
 # ---------------------------------------------------------------------------
 # Simulation models
 # ---------------------------------------------------------------------------
-class EarthConfig(BaseModel):
-    radius_m: float
-    mu_m3s2: float
-    j2: float
-    omega_rad_s: float
-
-
-class AtmosphereConfig(BaseModel):
-    model: str
-    max_altitude_m: float
-
-
 class ConstraintsConfig(BaseModel):
     max_q_Pa: float
     fairing_deploy_altitude_m: float
@@ -131,11 +96,6 @@ class SimulationConfig(BaseModel):
     t_start_s: float
     t_end_s: float
     max_step_s: float
-    integrator: str
-    rtol: float
-    atol: float
-    earth: EarthConfig
-    atmosphere: AtmosphereConfig
     constraints: ConstraintsConfig
 
 

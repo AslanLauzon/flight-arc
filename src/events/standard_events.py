@@ -50,6 +50,8 @@ class MaxQEvent(Event):
             self._prev_q = q
             self._peak_q = q
             return False
+        # Require q to have reached at least 1 kPa before declaring max-Q —
+        # prevents a spurious trigger at t=0 when q is rising from near-zero.
         if self._prev_q > 1_000.0 and q < self._prev_q:
             self._prev_q = q
             return True
@@ -84,9 +86,11 @@ class StagingEvent(Event):
         )
 
     def _action(self, state: SimState) -> EventResult:
+        # Force propellant to zero before jettison: staging can be triggered
+        # by guidance command before burnout, leaving residual propellant in
+        # the model that would otherwise carry over incorrectly.
         self.vehicle.mass_model.propellant_remaining_kg = 0.0
         self.vehicle.mass_model.jettison("stage")
-        state.stage_index = self.vehicle.mass_model.current_stage_index
 
         early_meco = (
             self.guidance is not None

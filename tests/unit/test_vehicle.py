@@ -34,7 +34,7 @@ def test_initial_stage_is_zero(vehicle):
 def test_burn_reduces_propellant(vehicle, cfg):
     from src.atmosphere.us_standard_1976 import pressure
     initial_prop = vehicle.mass_model.propellant_remaining_kg
-    vehicle.mass_model.burn(dt=1.0, ambient_pressure_Pa=pressure(0))
+    vehicle.mass_model.burn(dt=1.0, ambient_pressure_pa=pressure(0))
     assert vehicle.mass_model.propellant_remaining_kg < initial_prop
 
 
@@ -42,7 +42,7 @@ def test_burn_never_negative(vehicle, cfg):
     from src.atmosphere.us_standard_1976 import pressure
     # burn for a very long time
     for _ in range(10_000):
-        vehicle.mass_model.burn(dt=1.0, ambient_pressure_Pa=0.0)
+        vehicle.mass_model.burn(dt=1.0, ambient_pressure_pa=0.0)
     assert vehicle.mass_model.propellant_remaining_kg == 0.0
 
 

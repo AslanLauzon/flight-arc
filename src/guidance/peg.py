@@ -45,6 +45,9 @@ class PEG(GuidanceBase):
         self.cutoff_commanded = False
 
     def pitch_angle_deg(self, state: SimState) -> float:
+        # pitch_angle_deg is called 4 times per timestep by the RK4 substeps.
+        # Guard flag checks (MECO, relight, cutoff) to run only once per timestep
+        # so their side-effects (setting commanded flags) don't fire multiple times.
         do_checks = self._t_last_flags is None or state.t != self._t_last_flags
         if do_checks:
             self._t_last_flags = state.t
@@ -92,6 +95,9 @@ class PEG(GuidanceBase):
             self._update(state)
             self.t_last_update = state.t
 
+        # PEG steering law: pitch = atan(A + B*tau), where tau is time elapsed
+        # since the last guidance update. A is the current pitch bias and B is
+        # the pitch rate, both computed from the velocity-to-go vector in _update().
         tau = state.t - (self.t_last_update or state.t)
         return math.degrees(math.atan(self.A + self.B * tau))
 
@@ -150,6 +156,9 @@ class PEG(GuidanceBase):
         target_p = self.target_orbit.perigee_km * 1e3
         target_a = self.target_orbit.apogee_km * 1e3
         target_span = abs(target_a - target_p)
+        # Don't command cutoff if the vehicle hasn't climbed high enough yet —
+        # avoids cutting off during the early ascent when orbit elements briefly
+        # look correct but the vehicle is still on a suborbital arc.
         altitude_floor = target_p - min(4_000.0, 2_000.0 + 0.25 * target_span)
 
         if state.y < altitude_floor:
@@ -162,6 +171,7 @@ class PEG(GuidanceBase):
             self.cutoff_commanded = True
 
     def _update(self, state: SimState) -> None:
+        # Recompute PEG A/B coefficients from current state and velocity-to-go.
         ambient_pressure = pressure(state.y)
         stage = self.vehicle.mass_model.current_stage
         thrust = self.vehicle.thrust(state.y)
@@ -182,15 +192,19 @@ class PEG(GuidanceBase):
         r_target = R_EARTH + (self.target_orbit.perigee_km + self.target_orbit.apogee_km) / 2.0 * 1e3
         vx_target, vy_target = self._target_velocity(r_target)
 
+        # Gravity loss correction: effective gravity at the midpoint radius,
+        # reduced by centrifugal acceleration from current tangential velocity.
         r_mid = (r_now + r_target) / 2.0
         g_avg = G0 * (R_EARTH / r_mid) ** 2
         g_eff = max(0.0, g_avg - state.vx ** 2 / r_mid)
 
         vgo_x = vx_target - state.vx
-        vgo_y = (vy_target - state.vy) + g_eff * tgo
+        vgo_y = (vy_target - state.vy) + g_eff * tgo  # compensate for gravity over tgo
         if abs(vgo_x) < 1.0:
             return
 
+        # A = initial pitch tangent; B = pitch rate so that pitch reaches the
+        # target flight path angle exactly at cutoff (t_last_update + tgo).
         self.A = vgo_y / vgo_x
         tan_theta_f = vy_target / vx_target if abs(vx_target) > 1.0 else 0.0
         self.B = (tan_theta_f - self.A) / tgo

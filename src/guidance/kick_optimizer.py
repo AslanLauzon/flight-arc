@@ -48,7 +48,7 @@ def optimize_kick(
             update_interval_s=update_interval_s,
             allow_two_burn=False,
         )
-        state = SimState(t=cfg.simulation.t_start_s, mass_kg=vehicle.mass)
+        state = SimState(t=cfg.simulation.t_start_s)
         events = build_autosequence(cfg, vehicle, guidance=guidance)
         final = run(
             state=state,
@@ -67,6 +67,9 @@ def optimize_kick(
         stage_vx = float(staging["vx"])
         stage_vy = float(staging["vy"])
         flight_path_deg = abs(math.degrees(math.atan2(stage_vy, max(stage_vx, 1.0e-6))))
+        # Penalise staging conditions that make S2 work harder:
+        # - flight path angle > 50 deg means staging too steeply (gravity losses)
+        # - tangential velocity < 900 m/s means too little downrange speed at sep
         staging_penalty = (
             0.75 * max(0.0, flight_path_deg - 50.0) ** 2
             + 0.0005 * max(0.0, 900.0 - stage_vx) ** 2

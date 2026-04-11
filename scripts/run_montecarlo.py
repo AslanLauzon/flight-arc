@@ -32,7 +32,7 @@ def main() -> None:
     _console.print(montecarlo_stats_table(stats))
     _console.print()
 
-    payload = build_montecarlo_payload(cfg, results)
+    payload = build_montecarlo_payload(cfg, results, request_id="cli")
     json_path = write_payload_json(
         payload.model_dump(mode="json"),
         Path(OUTPUT_DIR) / "montecarlo_latest.json",

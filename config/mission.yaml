@@ -25,5 +25,4 @@ mission:
       kick_time_s: 15.0
       kick_angle_deg: 4.0        # initial pitch-kick to start the turn
     peg:
-      open_loop_until_s: 30.0    # open-loop gravity turn until atmosphere thins
       update_interval_s: 2.0     # guidance cycle rate

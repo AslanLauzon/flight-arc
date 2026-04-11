@@ -35,7 +35,15 @@ class Stage:
         return self.isp_sl_s + (self.isp_vac_s - self.isp_sl_s) * (1.0 - ambient_pressure_Pa / P_sl)
 
     def mass_flow(self, ambient_pressure_Pa: float) -> float:
-        """Mass flow rate [kg/s] at current ambient pressure."""
+        """Mass flow rate [kg/s] at current ambient pressure.
+
+        Note: uses thrust_vac_N / (isp_eff * G0) rather than the physically
+        correct thrust_actual / (isp_eff * G0). Because vehicle.thrust() already
+        scales thrust down with isp_eff, the consistent formula would be constant:
+        thrust_vac_N / (isp_vac_s * G0). As written, mass flow is higher than
+        physical in the lower atmosphere, so propellant depletes slightly faster
+        than reality during the first ~30 s of flight.
+        """
         G0 = 9.80665
         return self.thrust_vac_N / (self.effective_isp(ambient_pressure_Pa) * G0)
 

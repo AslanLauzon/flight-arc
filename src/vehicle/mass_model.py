@@ -19,8 +19,10 @@ class MassModel:
         self.payload_attached = True
 
     def total_mass(self) -> float:
+        # Current stage: remaining propellant + dry structure
         mass = self.propellant_remaining_kg
         mass += self.current_stage.dry_mass_kg
+        # Upper stages: full wet mass (they haven't burned yet)
         for stage in self.stages[self.current_stage_index + 1:]:
             mass += stage.dry_mass_kg + stage.propellant_mass_kg
         if self.fairing_attached:

@@ -37,10 +37,7 @@ def build_guidance(cfg: MissionToolkitConfig, vehicle: Vehicle) -> GuidanceBase:
         return PitchProgram(cfg.mission.guidance.pitch_program["points"])
     if mode == "gravity_turn":
         gt = cfg.mission.guidance.gravity_turn
-        return GravityTurn(
-            kick_time_s=gt["kick_time_s"],
-            kick_angle_deg=gt["kick_angle_deg"],
-        )
+        return GravityTurn(kick_time_s=gt["kick_time_s"])
     if mode == "peg":
         from src.guidance.kick_optimizer import optimize_kick
 
@@ -75,7 +72,7 @@ def run_nominal_mission(cfg: MissionToolkitConfig | None = None) -> NominalRunRe
 
     vehicle = Vehicle(cfg.vehicle)
     guidance = build_guidance(cfg, vehicle)
-    state = SimState(t=cfg.simulation.t_start_s, mass_kg=vehicle.mass)
+    state = SimState(t=cfg.simulation.t_start_s)
     events = build_autosequence(cfg, vehicle, guidance=guidance)
 
     final_state = run(

@@ -8,7 +8,7 @@ The propagator calls check() each step; when it returns True, trigger() fires.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -21,7 +21,6 @@ class EventResult:
     t_trigger: float
     state_snapshot: dict
     message: str = ""
-    constraint_violations: list[str] = field(default_factory=list)
 
 
 class Event(ABC):

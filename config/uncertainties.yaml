@@ -26,16 +26,6 @@ uncertainties:
     mu: 0.0
     sigma: 0.1                   # ±0.1 s pitch program timing jitter
 
-  separation_impulse_fraction:
-    dist: normal
-    mu: 1.0
-    sigma: 0.03
-
-  tip_off_rate_deg_s:
-    dist: uniform
-    low: 0.0
-    high: 1.0
-
 montecarlo:
   n_runs: 10
   seed: 42
